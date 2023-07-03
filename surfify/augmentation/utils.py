@@ -23,11 +23,13 @@ class RandomAugmentation(object):
     """
     Interval = namedtuple("Interval", ["low", "high", "dtype"])
 
-    def __init__(self):
+    def __init__(self, randomize_per_channel=True, requires_tensor=False):
         """ Init class.
         """
         self.intervals = {}
         self.writable = True
+        self.randomize_per_channel = randomize_per_channel
+        self.requires_tensor = requires_tensor
 
     def _randomize(self):
         """ Update the random parameters.
@@ -70,9 +72,20 @@ class RandomAugmentation(object):
             augmented input data.
         """
         self._randomize()
+<<<<<<< HEAD
         if kwargs.get("inplace", True):
             data = data.copy()
         return self.run(data, *args, **kwargs)
+=======
+        _data, back_to_numpy = copy_with_channel_dim(data, to_tensor=self.requires_tensor)
+        for channel_dim in range(len(_data)):
+            if self.randomize_per_channel:
+                self._randomize()
+            _data[channel_dim] =  self.run(_data[channel_dim], *args, **kwargs)
+        if back_to_numpy:
+            _data = _data.detach().cpu().numpy()
+        return _data.squeeze()
+>>>>>>> e0f2667 (added tests for mixup augmentations, handles array type and copy and channels in the RandomAugmentation call)
 
     @abc.abstractmethod
     def run(self, data):
@@ -142,21 +155,11 @@ class Transformer(object):
         _data: array (N, ) or (n_channels, N)
             the transformed input data.
         """
-        ndim = data.ndim
-        assert ndim in (1, 2)
-        _data = data.copy()
+        _data, _ = copy_with_channel_dim(data)
         for trf in self.transforms:
             if np.random.rand() < trf.probability:
-                if ndim == 1:
-                    _data = trf.transform(data, *args, **kwargs)
-                else:
-                    _c_data = []
-                    for _data in data:
-                        _c_data.append(trf.transform(_data, *args, **kwargs))
-                        trf.transform.writable = False
-                    trf.transform.writable = True
-                    _data = np.array(_c_data)
-        return _data
+                _data = trf.transform(_data, *args, **kwargs)
+        return _data.squeeze()
 
 
 def listify(data):
@@ -176,3 +179,44 @@ def listify(data):
         return data
     else:
         return [data]
+<<<<<<< HEAD
+=======
+
+
+def copy_with_channel_dim(data, to_tensor=False):
+    """ Create a copy of a 1 or 2 dimensional array with a channel dimension.
+
+    Parameters
+    ----------
+    data: array or torch.Tensor (N, ) or (n_channels, N)
+        the input data
+    to_tensor: bool, default False
+        optionnaly casts input data to a tensor if its not
+
+    Returns
+    -------
+    _data: array or torch.Tensor (N, ) or (n_channels, N)
+        copy of the input array with same type, except if to_tensor if True
+    back_to_numpy: bool
+        True if the array was casted to a tensor else False
+    """
+    n_dim = len(data.shape)
+    if n_dim > 2:
+        raise ValueError("Input array must be 1 or 2 dimensional.")
+    back_to_numpy = False
+    if type(data) is torch.Tensor:
+        _data = data.clone()
+        if n_dim == 1:
+            _data = _data.unsqueeze(0)
+    elif to_tensor:
+        _data = torch.Tensor(data)
+        back_to_numpy = True
+        if n_dim == 1:
+            _data = _data.unsqueeze(0)
+    else:
+        _data = data.copy()
+        if n_dim == 1:
+            _data = _data[np.newaxis]
+
+    return _data, back_to_numpy
+>>>>>>> e0f2667 (added tests for mixup augmentations, handles array type and copy and channels in the RandomAugmentation call)

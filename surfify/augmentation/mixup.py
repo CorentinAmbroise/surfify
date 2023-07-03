@@ -22,7 +22,7 @@ from .utils import RandomAugmentation, listify
 class MixUpAugmentation(RandomAugmentation):
     """ Aplly an augmentation with random parameters defined in intervals.
     """
-    def __init__(self, prob, n_vertices):
+    def __init__(self, prob, n_vertices, *args, **kwargs):
         """ Init class.
 
         Parameters
@@ -32,7 +32,7 @@ class MixUpAugmentation(RandomAugmentation):
         n_vertices: int (N, )
             the size of the cortical measures.
         """
-        super().__init__()
+        super().__init__(*args, **kwargs)
         self.prob = prob
         self.n_vertices = n_vertices
         self.rand_mask()

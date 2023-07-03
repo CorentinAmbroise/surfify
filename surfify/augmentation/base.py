@@ -83,12 +83,20 @@ class SurfCutOut(RandomAugmentation):
         data: arr (N, )
             ablated input data.
         """
-        for idx in range(self.n_patches):
-            random_node = np.random.randint(0, len(self.vertices))
-            random_size = np.random.randint(self.patch_size - self.sigma,
-                                            self.patch_size + self.sigma + 1)
-            patch_indices = find_neighbors(
-                random_node, random_size, self.neighs)
+        for _ in range(self.n_patches):
+            self._randomize("patch_size")
+            random_node = np.random.randint(len(self.vertices))
+            if self.random_size:
+                patch_indices = []
+                for neigh in self.neighs[random_node][1]:
+                    _size = np.random.randint(self.patch_size)
+                    for ring in range(1, _size + 1):
+                        patch_indices += self.neighs[neigh][ring]
+                patch_indices = list(set(patch_indices))
+            else:
+                patch_indices = [random_node]
+                for ring in range(1, self.patch_size + 1):
+                    patch_indices += self.neighs[random_node][ring]
             data[patch_indices] = self.replacement_value
         return data
 
