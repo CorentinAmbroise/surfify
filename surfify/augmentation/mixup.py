@@ -22,7 +22,7 @@ from .utils import RandomAugmentation, listify
 class MixUpAugmentation(RandomAugmentation):
     """ Aplly an augmentation with random parameters defined in intervals.
     """
-    def __init__(self, prob, n_vertices, *args, **kwargs):
+    def __init__(self, prob, n_vertices, randomize_per_channel=True):
         """ Init class.
 
         Parameters
@@ -32,7 +32,7 @@ class MixUpAugmentation(RandomAugmentation):
         n_vertices: int (N, )
             the size of the cortical measures.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__()
         self.prob = prob
         self.n_vertices = n_vertices
         self.rand_mask()
@@ -49,9 +49,43 @@ class MixUpAugmentation(RandomAugmentation):
         """
         self.mask = np.random.binomial(n=1, p=self.prob, size=self.n_vertices)
 
+    def __call__(self, data, *args, **kwargs):
+        if len(args) > 0:
+            other_data = args[0]
+            del args[0]
+        elif len(kwargs) > 0:
+            key, other_data = list(kwargs.items())[0]
+            del kwargs[key]
+
+        else:
+            raise ValueError("Mixup augmentations require additional data.")
+        ndim = data.ndim
+        other_ndim = other_data.ndim
+        assert ndim in (1, 2)
+        assert other_ndim in list(range(1, ndim + 2))
+        _data = data.copy()
+        _other_data = other_data.copy()
+        if ndim == 1:
+            _data = super().__call__(_data, _other_data, *args, **kwargs)
+        else:
+            all_c_data = []
+            for c_index in range(len(_data)):
+                _c_data = _data[c_index]
+                if other_ndim == ndim:
+                    _c_other_data = _other_data[c_index]
+                else:
+                    _c_other_data = _other_data[:, c_index]
+                all_c_data.append(super().__call__(_c_data, _c_other_data,
+                                                   *args, **kwargs))
+                if not self.randomize_per_channel:
+                    self.writable = False
+            self.writable = True
+            _data = np.array(all_c_data)
+        return _data
+
 
 class HemiMixUp(MixUpAugmentation):
-    """ Randomly permutes a subject’s measurements at specific vertices
+    """ Randomly permutes a subject's measurements at specific vertices
     across hemispheres, assuming a vertex-to-vertex correspondence between
     hemispheres.
     """

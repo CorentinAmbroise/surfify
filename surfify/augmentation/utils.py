@@ -109,6 +109,33 @@ def interval(bound, dtype=float):
     return RandomAugmentation.Interval(min_val, max_val, dtype)
 
 
+class MultiChannelRandomAugmentation(RandomAugmentation):
+    """ Class able to deal with mutiple channel input data. It can either
+    randomize the parameters for each channel, are keep the same across them
+    """
+    def __init__(self, randomize_per_channel=True):
+        """ Init class.
+        """
+        super().__init__()
+        self.randomize_per_channel = randomize_per_channel
+    
+    def __call__(self, data, *args, **kwargs):
+        ndim = data.ndim
+        assert ndim in (1, 2)
+        _data = data.copy()
+        if ndim == 1:
+            _data = super().__call__(_data, *args, **kwargs)
+        else:
+            all_c_data = []
+            for _c_data in _data:
+                all_c_data.append(super().__call__(_c_data, *args, **kwargs))
+                if not self.randomize_per_channel:
+                    self.writable = False
+            self.writable = True
+            _data = np.array(all_c_data)
+        return _data
+
+
 class Transformer(object):
     """ Class that can be used to register a sequence of transformations.
     """
@@ -145,11 +172,11 @@ class Transformer(object):
         _data: array (N, ) or (n_channels, N)
             the transformed input data.
         """
-        _data, _ = copy_with_channel_dim(data)
+        _data = data.copy()
         for trf in self.transforms:
             if np.random.rand() < trf.probability:
                 _data = trf.transform(_data, *args, **kwargs)
-        return _data.squeeze()
+        return _data
 
 
 def listify(data):
