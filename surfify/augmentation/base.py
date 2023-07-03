@@ -21,7 +21,7 @@ from surfify.utils import (
     neighbors, rotate_data, find_rotation_interpol_coefs)
 from surfify.nn import IcoDiNeConv
 from surfify.utils.io import compute_and_store
-from .utils import MultiChannelRandomAugmentation
+from .utils import MultiChannelRandomAugmentation, RandomAugmentation
 
 
 class SurfCutOut(MultiChannelRandomAugmentation):
@@ -65,7 +65,7 @@ class SurfCutOut(MultiChannelRandomAugmentation):
         self.vertices = vertices
         self.triangles = triangles
         max_depth = patch_size
-        if isinstance(patch_size, MultiChannelRandomAugmentation.Interval):
+        if isinstance(patch_size, RandomAugmentation.Interval):
             max_depth = patch_size.high
         if neighs is None or type(neighs[0]) is not dict:
             self.neighs = neighbors_cached(
@@ -93,12 +93,21 @@ class SurfCutOut(MultiChannelRandomAugmentation):
         for _ in range(self.n_patches):
             # self._randomize("patch_size")
             random_node = np.random.randint(len(self.vertices))
+            
+            # If sigma is not null, patch size can vary around its current
+            # value by +- sigma for each patch
+            max_patch_size = self.patch_size
+            if "patch_size" in self.intervals.keys():
+                max_patch_size = self.intervals["patch_size"].high
+            random_size = np.random.randint(
+                max(self.patch_size - self.sigma, 0),
+                min(self.patch_size + self.sigma + 1, max_patch_size))
             # for each neighbor, so in each direction, we seek neighbors
             # up to a different random order, creating irregular patches
             # in different directions
             patch_indices = []
             for neigh in self.neighs[random_node][1]:
-                _size = np.random.randint(self.patch_size)
+                _size = np.random.randint(random_size)
                 for ring in range(1, _size + 1):
                     patch_indices += self.neighs[neigh][ring]
             patch_indices = list(set(patch_indices))
@@ -151,7 +160,7 @@ class SurfBlur(MultiChannelRandomAugmentation):
     surfify.utils.neighbors
     surfify.nn.modules.IcoDiNeConv
     """
-    def __init__(self, vertices, triangles, sigma, neighs=None,
+    def __init__(self, vertices, triangles, sigma, neighs=None, cachedir=None,
                  *args, **kwargs):
         """ Init class.
         Parameters
@@ -169,13 +178,17 @@ class SurfBlur(MultiChannelRandomAugmentation):
             organized by rings as values.
         """
         super().__init__(*args, **kwargs)
+        memory = Memory(cachedir, verbose=0)
+        neighbors_cached = memory.cache(neighbors)
         self.vertices = vertices
         self.triangles = triangles
-        self.sigma = sigma
-        depth = max(1, int(2 * self.sigma + 0.5))
+        max_sigma = sigma
+        if isinstance(sigma, RandomAugmentation.Interval):
+            max_sigma = sigma.high
+        depth = max(1, int(2 * max_sigma + 0.5))
         if neighs is None:
-            self.neighs = neighbors(vertices, triangles, depth=depth,
-                                    direct_neighbor=True)
+            self.neighs = neighbors_cached(vertices, triangles, depth=depth,
+                                           direct_neighbor=True)
         else:
             self.neighs = neighs
         self.neighs = np.asarray(list(self.neighs.values()))
