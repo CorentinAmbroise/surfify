@@ -21,10 +21,10 @@ from surfify.utils import (
     neighbors, rotate_data, find_rotation_interpol_coefs)
 from surfify.nn import IcoDiNeConv
 from surfify.utils.io import compute_and_store
-from .utils import MultiChannelRandomAugmentation, RandomAugmentation
+from .utils import RandomAugmentation
 
 
-class SurfCutOut(MultiChannelRandomAugmentation):
+class SurfCutOut(RandomAugmentation):
     """ Starting from random vertices, the SurfCutOut sets an adaptive connex
     neighborhood to zero.
 
@@ -118,7 +118,7 @@ class SurfCutOut(MultiChannelRandomAugmentation):
         return data
 
 
-class SurfNoise(MultiChannelRandomAugmentation):
+class SurfNoise(RandomAugmentation):
     """ The SurfNoise adds a Gaussian white noise with standard deviation
     sigma.
     """
@@ -150,7 +150,7 @@ class SurfNoise(MultiChannelRandomAugmentation):
         return data
 
 
-class SurfBlur(MultiChannelRandomAugmentation):
+class SurfBlur(RandomAugmentation):
     """ An icosahedron texture Gaussian blur implementation. It uses the DiNe
     convolution filter for speed. The receptive field is controlled by sigma,
     expressed in mm.
@@ -219,7 +219,7 @@ class SurfBlur(MultiChannelRandomAugmentation):
         return data.numpy().squeeze()
 
 
-class SurfRotation(MultiChannelRandomAugmentation):
+class SurfRotation(RandomAugmentation):
     """ The SurfRotation rotate the cortical measures.
 
     See Also
