@@ -180,6 +180,7 @@ class GroupMixUp(MixUpAugmentation):
 
 class MixUpTransformer(Transformer):
     """ Class that can be used to register a sequence of MixUp transformations.
+    not functional
     """
 
     def __call__(self, data, other_data, *args, **kwargs):
