@@ -8,11 +8,8 @@ Credit: A Grigis & C Ambroise
 A simple example on how to use augmentations in the spherical domain.
 """
 
-import os
-import time
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import axes3d
 from surfify.utils import icosahedron, neighbors, min_depth_to_get_n_neighbors
 from surfify.plotting import plot_trisurf
 from surfify.augmentation import (
