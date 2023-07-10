@@ -9,8 +9,7 @@ A simple example on how to build spherical neighbors using an icosahedron.
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import axes3d
-from surfify.utils import icosahedron, neighbors, get_rectangular_projection, setup_logging
+from surfify.utils import icosahedron, neighbors, get_rectangular_projection
 from surfify.plotting import plot_trisurf
 
 #############################################################################
@@ -19,10 +18,8 @@ from surfify.plotting import plot_trisurf
 #
 # Display direct neighbors for some vertices.
 
-setup_logging(level="debug", logfile=None)
-
-vertices, triangles = icosahedron(order=3)
-neighs = neighbors(vertices, triangles, depth=4, direct_neighbor=True)
+vertices, triangles = icosahedron(order=2)
+neighs = neighbors(vertices, triangles, depth=3, direct_neighbor=True)
 colors = ["red", "green", "blue", "orange", "purple", "brown", "pink",
           "gray", "olive", "cyan", "yellow", "tan", "salmon", "violet",
           "steelblue", "lime", "navy"] * 5
@@ -30,9 +27,7 @@ fig, ax = plt.subplots(1, 1, subplot_kw={
     "projection": "3d", "aspect": "auto"}, figsize=(10, 10))
 plot_trisurf(vertices, triangles=triangles, colorbar=False, fig=fig, ax=ax,
              linewidths=0.3)
-for vidx in (4,):
-    print(neighs[vidx])
-    print(len(neighs[vidx]))
+for vidx in (4, 40):
     for cnt, idx in enumerate(neighs[vidx]):
         point = vertices[idx]
         ax.scatter(point[0], point[1], point[2], marker="o",# c=colors[cnt],
