@@ -20,9 +20,7 @@ from surfify.plotting import plot_trisurf
 
 vertices, triangles = icosahedron(order=2)
 neighs = neighbors(vertices, triangles, depth=3, direct_neighbor=True)
-colors = ["red", "green", "blue", "orange", "purple", "brown", "pink",
-          "gray", "olive", "cyan", "yellow", "tan", "salmon", "violet",
-          "steelblue", "lime", "navy"] * 5
+
 fig, ax = plt.subplots(1, 1, subplot_kw={
     "projection": "3d", "aspect": "auto"}, figsize=(10, 10))
 plot_trisurf(vertices, triangles=triangles, colorbar=False, fig=fig, ax=ax,
@@ -30,7 +28,7 @@ plot_trisurf(vertices, triangles=triangles, colorbar=False, fig=fig, ax=ax,
 for vidx in (4, 40):
     for cnt, idx in enumerate(neighs[vidx]):
         point = vertices[idx]
-        ax.scatter(point[0], point[1], point[2], marker="o",# c=colors[cnt],
+        ax.scatter(point[0], point[1], point[2], marker="o",
                 s=100)
         ax.text(point[0], point[1], point[2], str(cnt), size=20)
 
