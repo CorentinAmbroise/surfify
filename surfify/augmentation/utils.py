@@ -76,7 +76,7 @@ class RandomAugmentation(object):
         return self.run(data, *args, **kwargs)
 
     @abc.abstractmethod
-    def run(self, data):
+    def run(self, data, *args, **kwargs):
         return
 
 
@@ -107,7 +107,7 @@ def interval(bound, dtype=float):
     return RandomAugmentation.Interval(min_val, max_val, dtype)
 
 
-class Transformer(object):
+class BaseTransformer(object):
     """ Class that can be used to register a sequence of transformations.
     """
     Transform = namedtuple("Transform", [
@@ -132,6 +132,14 @@ class Transformer(object):
                              randomize_per_channel=randomize_per_channel)
         self.transforms.append(trf)
 
+    @abc.abstractmethod
+    def __call__(self, data, *args, **kwargs):
+        return
+    
+
+class Transformer(BaseTransformer):
+    """ Class that can be used to register a sequence of transformations.
+    """
     def __call__(self, data, *args, **kwargs):
         """ Apply the registered transformations.
 
@@ -145,24 +153,28 @@ class Transformer(object):
         _data: array (N, ) or (n_channels, N)
             the transformed input data.
         """
-        ndim = data.ndim
-        assert ndim in (1, 2)
-        _data = data.copy()
-        if ndim == 1:
-            _data = _data[np.newaxis]
-        all_c_data = []
-        for _c_data in _data:
-            for trf in self.transforms:
-                if np.random.rand() < trf.probability:
-                    _c_data = trf.transform(_c_data, *args, **kwargs)
-                if not trf.randomize_per_channel:
-                    trf.transform.writable = False
-            all_c_data.append(_c_data)
+        return apply_chained_transforms(data, self.transforms, *args, **kwargs)
+    
 
-        for trf in self.transforms:
-            trf.transform.writable = True
-        _data = np.array(all_c_data)
-        return _data.squeeze()
+def apply_chained_transforms(data, transforms, *args, **kwargs):
+    ndim = data.ndim
+    assert ndim in (1, 2)
+    _data = data.copy()
+    if ndim == 1:
+        _data = _data[np.newaxis]
+    all_c_data = []
+    for _c_data in _data:
+        for trf in transforms:
+            if np.random.rand() < trf.probability:
+                _c_data = trf.transform(_c_data, *args, **kwargs)
+            if not trf.randomize_per_channel:
+                trf.transform.writable = False
+        all_c_data.append(_c_data)
+
+    for trf in transforms:
+        trf.transform.writable = True
+    _data = np.array(all_c_data)
+    return _data.squeeze()
 
 
 def listify(data):

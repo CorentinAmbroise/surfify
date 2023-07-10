@@ -21,7 +21,7 @@ from surfify.utils import (
     neighbors, rotate_data, find_rotation_interpol_coefs)
 from surfify.nn import IcoDiNeConv
 from surfify.utils.io import compute_and_store
-from .utils import RandomAugmentation
+from .utils import RandomAugmentation, Transformer, apply_chained_transforms
 
 
 class SurfCutOut(RandomAugmentation):
@@ -33,8 +33,7 @@ class SurfCutOut(RandomAugmentation):
     surfify.utils.neighbors
     """
     def __init__(self, vertices, triangles, neighs=None, patch_size=3,
-                 n_patches=1, sigma=0, replacement_value=0, cachedir=None,
-                 *args, **kwargs):
+                 n_patches=1, sigma=0, replacement_value=0, cachedir=None):
         """ Init class.
 
         Parameters
@@ -59,7 +58,7 @@ class SurfCutOut(RandomAugmentation):
         replacement_value: float, default 0
             the replacement patch value.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__()
         memory = Memory(cachedir, verbose=0)
         neighbors_cached = memory.cache(neighbors)
         self.vertices = vertices
@@ -122,7 +121,7 @@ class SurfNoise(RandomAugmentation):
     """ The SurfNoise adds a Gaussian white noise with standard deviation
     sigma.
     """
-    def __init__(self, sigma, *args, **kwargs):
+    def __init__(self, sigma):
         """ Init class.
 
         Parameters
@@ -130,7 +129,7 @@ class SurfNoise(RandomAugmentation):
         sigma: float
             the noise standard deviation.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__()
         self.sigma = sigma
 
     def run(self, data):
@@ -160,8 +159,7 @@ class SurfBlur(RandomAugmentation):
     surfify.utils.neighbors
     surfify.nn.modules.IcoDiNeConv
     """
-    def __init__(self, vertices, triangles, sigma, neighs=None, cachedir=None,
-                 *args, **kwargs):
+    def __init__(self, vertices, triangles, sigma, neighs=None, cachedir=None):
         """ Init class.
         Parameters
         ----------
@@ -177,7 +175,7 @@ class SurfBlur(RandomAugmentation):
             index as keys and a dictionary of neighbors vertices row indexes
             organized by rings as values.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__()
         memory = Memory(cachedir, verbose=0)
         neighbors_cached = memory.cache(neighbors)
         self.vertices = vertices

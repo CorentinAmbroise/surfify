@@ -16,13 +16,13 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.neighbors import NearestNeighbors
 from scipy.spatial.distance import pdist, squareform
-from .utils import RandomAugmentation, listify, Transformer
+from .utils import RandomAugmentation, listify
 
 
 class MixUpAugmentation(RandomAugmentation):
     """ Aplly an augmentation with random parameters defined in intervals.
     """
-    def __init__(self, prob, n_vertices, randomize_per_channel=True):
+    def __init__(self, prob, n_vertices):
         """ Init class.
 
         Parameters
@@ -176,55 +176,3 @@ class GroupMixUp(MixUpAugmentation):
             n_neighbors=n_neighbors + 1, metric="precomputed").fit(dist)
         _, neigh_ind = nbrs.kneighbors(dist)
         return neigh_ind[1:]
-
-
-class MixUpTransformer(Transformer):
-    """ Class that can be used to register a sequence of MixUp transformations.
-    not functional
-    """
-
-    def __call__(self, data, other_data, *args, **kwargs):
-        """ Apply the registered transformations.
-
-        Parameters
-        ----------
-        data: array (N, ) or (n_channels, N)
-            the input data.
-
-        Returns
-        -------
-        _data: array (N, ) or (n_channels, N)
-            the transformed input data.
-        """
-        if len(args) > 0:
-            other_data = args[0]
-            del args[0]
-        elif len(kwargs) > 0:
-            key, other_data = list(kwargs.items())[0]
-            del kwargs[key]
-
-        else:
-            raise ValueError("Mixup augmentations require additional data.")
-        ndim = data.ndim
-        other_ndim = other_data.ndim
-        assert ndim in (1, 2)
-        assert other_ndim in list(range(1, ndim + 2))
-        _data = data.copy()
-        _other_data = other_data.copy()
-        if ndim == 1:
-            _data = super().__call__(_data, _other_data, *args, **kwargs)
-        else:
-            all_c_data = []
-            for c_index in range(len(_data)):
-                _c_data = _data[c_index]
-                if other_ndim == ndim:
-                    _c_other_data = _other_data[c_index]
-                else:
-                    _c_other_data = _other_data[:, c_index]
-                all_c_data.append(super().__call__(_c_data, _c_other_data,
-                                                   *args, **kwargs))
-                if not self.randomize_per_channel:
-                    self.writable = False
-            self.writable = True
-            _data = np.array(all_c_data)
-        return _data
